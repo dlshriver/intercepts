@@ -23,7 +23,7 @@ Handler functions receive the intercepted function as their first argument, as w
 ...  result = func(num)
 ...  return num - (result - num)
 >>> def handler2(func, *args, **kwargs):
-...  return 'The answer is: ' + func(*args, **kwargs)
+...  return 'The answer is: %s' % func(*args, **kwargs)
 ```
 
 Installation
@@ -36,6 +36,8 @@ Intercepts can be installed using `pip`.
 Documentation
 -------------
 
-Sorry, we are in the very early stages of development so documentation is limited.
+Sorry, we are in the very early stages of development so documentation is limited. There is some documentation in the [`docs`](https://github.com/dlshriver/intercepts/tree/master/docs) directory, but for the most up-to-date documentation, use `pydoc`.
+
+    $ pydoc intercepts
 
 ***This software is in early stages of development and may be unstable.***
