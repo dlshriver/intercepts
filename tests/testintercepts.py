@@ -101,6 +101,12 @@ class TestRegisterFunctionHandler(unittest.TestCase):
         self.assertIsNone(func_no_return(),
                           'second function should '
                           'no longer be intercepted')
+        self.assertEqual(intercepts.FUNC_HANDLERS, {},
+                         'All function intercept '
+                         'handlers should be unregistered.')
+        self.assertEqual(intercepts.METHOD_HANDLERS, {},
+                         'All method intercept '
+                         'handlers should be unregistered.')
 
     def test_unregister(self):
         result = func_no_args()
