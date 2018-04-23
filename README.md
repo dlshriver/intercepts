@@ -1,6 +1,10 @@
 Intercepts
 ==========
 
+[![Build Status](https://travis-ci.org/dlshriver/intercepts.svg?branch=master)](https://travis-ci.org/dlshriver/intercepts)
+[![PyPI](https://img.shields.io/pypi/v/intercepts.svg)](https://pypi.org/project/intercepts/)
+[![license](https://img.shields.io/github/license/dlshriver/intercepts.svg)](https://github.com/dlshriver/intercepts/blob/master/LICENSE)
+
 Intercepts allows you to intercept any function call in `python` and handle it in any manner you choose. For example, you can pre-process the inputs to a function, or apply post-processing on its output. Intercepts also allows you to completely replace a function with a custom implementation.
 
 ```python
