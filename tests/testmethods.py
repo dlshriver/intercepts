@@ -112,6 +112,36 @@ class TestRegisterMethodHandler(unittest.TestCase):
                          'All method intercept '
                          'handlers should be unregistered.')
 
+    def test_register_mixed_function_method(self):
+        t = TestClass()
+        result = t.method_no_arg()
+        intercepts.register(TestClass.method_no_arg, handler)
+        self.assertEqual(t.method_no_arg(), ('handled', result),
+                         'handler function should modify output')
+        intercepts.register(t.method_no_arg, handler)
+        t2 = TestClass()
+        self.assertEqual(t2.method_no_arg(), ('handled', result),
+                         'handler function should modify output of t2')
+        self.assertEqual(t.method_no_arg(),
+                         ('handled', ('handled', result)),
+                         'handler function should modify output of t')
+
+    @unittest.skip('Need to fix registering function'
+                   ' handlers for handled methods.')
+    def test_register_mixed_method_function(self):
+        t = TestClass()
+        result = t.method_no_arg()
+        intercepts.register(t.method_no_arg, handler)
+        self.assertEqual(t.method_no_arg(), ('handled', result),
+                         'handler function should modify output')
+        intercepts.register(TestClass.method_no_arg, handler)
+        t2 = TestClass()
+        self.assertEqual(t2.method_no_arg(), ('handled', result),
+                         'handler function should modify output of t2')
+        self.assertEqual(t.method_no_arg(),
+                         ('handled', ('handled', result)),
+                         'handler function should modify output of t')
+
 
 if __name__ == '__main__':
     unittest.main()
