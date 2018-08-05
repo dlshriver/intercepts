@@ -9,10 +9,24 @@ import sys
 import types
 import uuid
 from collections import defaultdict
-from functools import partial
+
+STDOUT = sys.stdout
 
 FUNC_HANDLERS = {}
 METHOD_HANDLERS = {}
+
+
+def _replace_builtins():
+    '''Replaces all built-in functions with interceptable functions.
+    '''
+    builtins = globals()['__builtins__']
+    for name, builtin in builtins.items():
+        if isinstance(builtin, types.BuiltinFunctionType):
+            def builtin_replacement(builtin):
+                def replacement(*args, **kwargs):
+                    return builtin(*args, **kwargs)
+                return replacement
+            builtins[name] = builtin_replacement(builtin)
 
 
 def _clone_code(code, argcount=None, kwonlyargcount=None,
@@ -59,7 +73,8 @@ def _get_func_handler(func, handler):
                                    consts=(intercept_handler.__code__
                                            .co_consts + (handler_id,)),
                                    filename=func.__code__.co_filename,
-                                   name=func.__code__.co_name)
+                                   name=func.__code__.co_name,
+                                   freevars=func.__code__.co_freevars)
     FUNC_HANDLERS[handler_id] = (handler, orig_func,
                                  func, new_handler_code)
     return new_handler_code
@@ -178,3 +193,7 @@ def unregister_all():
     for _, _, method, _ in list(METHOD_HANDLERS.values()):
         unregister(getattr(method.__self__,
                            method.__func__.__name__))
+
+
+_replace_builtins()
+# exit()

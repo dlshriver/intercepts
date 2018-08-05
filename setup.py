@@ -17,7 +17,7 @@ setup(
     name='intercepts',
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
-    version='0.1.1',
+    version='0.2.0',
     description='Intercept function and method calls',
     long_description=long_description,
     long_description_content_type='text/markdown',
