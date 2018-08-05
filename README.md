@@ -30,6 +30,18 @@ Handler functions receive the intercepted function as their first argument, as w
 ...  return 'The answer is: %s' % func(*args, **kwargs)
 ```
 
+The intercepts module also allows intercepting python built-in functions, such as `print` and `sorted`. For best results, the intercepts module should be the first module imported.
+
+```python
+>>> def print_handler(print_func, message):
+...  print_func(''.join(reversed(message)))
+>>> print("Hello world")
+Hello world
+>>> intercepts.register(print, print_handler)
+>>> print("Hello world")
+dlrow olleH
+```
+
 Requirements
 ------------
 
