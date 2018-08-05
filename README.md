@@ -30,6 +30,11 @@ Handler functions receive the intercepted function as their first argument, as w
 ...  return 'The answer is: %s' % func(*args, **kwargs)
 ```
 
+Requirements
+------------
+
+Intercepts requires python 3.3+. There are currently no additional dependencies.
+
 Installation
 ------------
 
