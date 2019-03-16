@@ -3,6 +3,8 @@ intercepts setup script
 """
 
 from setuptools import setup, find_packages
+from intercepts import __version__
+
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -10,20 +12,20 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name='intercepts',
+    name="intercepts",
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
-    version='0.2.0',
-    description='Intercept function and method calls',
+    version=__version__,
+    description="Intercept function and method calls",
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='https://github.com/dlshriver/intercepts',
-    author='David Shriver',
-    author_email='davidshriver@outlook.com',
+    long_description_content_type="text/markdown",
+    url="https://github.com/dlshriver/intercepts",
+    author="David Shriver",
+    author_email="davidshriver@outlook.com",
     # For a list of valid classifiers, see
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -31,22 +33,19 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
-
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Testing',
-
-        'License :: OSI Approved :: MIT License',
-
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Topic :: Software Development :: Testing",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
     ],
-    keywords='intercepts testing development',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    keywords="intercepts testing development",
+    packages=find_packages(exclude=["contrib", "docs", "tests"]),
     project_urls={
-        'Source': 'https://github.com/dlshriver/intercepts/',
-        'Issues': 'https://github.com/dlshriver/intercepts/issues',
+        "Source": "https://github.com/dlshriver/intercepts/",
+        "Issues": "https://github.com/dlshriver/intercepts/issues",
     },
 )

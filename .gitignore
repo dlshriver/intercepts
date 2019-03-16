@@ -103,11 +103,6 @@ ENV/
 *.ipynb
 
 .vscode/
-*.model
-/data/
-/crossfold/
-*.slurm
-*.csv
-*.dat
-/*scratch*
 *private*
+tmp/
+.env.d/
