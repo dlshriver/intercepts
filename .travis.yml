@@ -4,4 +4,4 @@ python:
   - "3.6"
   - "3.7"
 script:
-  - nose
+  - python -m unittest discover -v tests
