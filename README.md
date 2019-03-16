@@ -45,7 +45,7 @@ dlrow olleH
 Requirements
 ------------
 
-Intercepts requires python 3.3+. There are currently no additional dependencies.
+Intercepts requires python 3.5+. There are currently no additional dependencies.
 
 Installation
 ------------

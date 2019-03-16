@@ -9,7 +9,7 @@ This part of the documentation covers the installation of intercepts.
 Install with pip
 ----------------
 
-Intercepts requires Python 3.3+.
+Intercepts requires Python 3.5+.
 There are currently no additional dependencies.
 To install intercepts, just run this command in your favorite terminal::
 
