@@ -33,11 +33,11 @@ import intercepts
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    'sphinx_autodoc_typehints',
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
+    "fmttypehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
