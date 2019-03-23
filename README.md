@@ -61,8 +61,6 @@ Or, use `pip` to install the latest version from the github source.
 Documentation
 -------------
 
-Sorry, we are in the very early stages of development so documentation is limited. There is some documentation in the [`docs`](https://github.com/dlshriver/intercepts/tree/master/docs) directory, but for the most up-to-date documentation, use `pydoc`.
-
-    $ pydoc intercepts
+Some documentation is available [here](https://intercepts.readthedocs.io/en/latest/).
 
 ***This software is in early stages of development and may be unstable.***
