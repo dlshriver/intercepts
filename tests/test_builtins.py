@@ -22,6 +22,7 @@ class MockStdout:
         pass
 
 
+@unittest.skip("Known to currently be broken.")
 class TestRegisterBuiltingHandler(unittest.TestCase):
     def setUp(self):
         intercepts.unregister_all()

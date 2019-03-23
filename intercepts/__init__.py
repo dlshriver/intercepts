@@ -17,7 +17,7 @@ Usage:
 
 :copyright: (c) 2019 by David Shriver.
 """
-import intercepts._builtins
+# import intercepts._builtins
 
 from .registration import register, unregister, unregister_all
 from .__version__ import __version__

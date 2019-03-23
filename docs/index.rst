@@ -15,6 +15,11 @@ Release v\ |version|. (:ref:`Installation <install>`)
 .. image:: https://travis-ci.org/dlshriver/intercepts.svg?branch=master
     :target: https://travis-ci.org/dlshriver/intercepts
 
+.. note:: Intercepting builtin functions and methods is currently not working
+    correctly and has been disabled. Unfortunately, this means that most of the
+    examples shown in this documentation do not work. I am working on fixing
+    these issues.
+    -- David
 
 **Intercepts** allows you to intercept any function call in Python
 and handle it in any manner you choose.
