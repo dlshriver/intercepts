@@ -1,9 +1,7 @@
 """
 intercepts setup script
 """
-
-from setuptools import setup, find_packages
-from intercepts import __version__
+from setuptools import setup, find_packages, Extension
 
 # To use a consistent encoding
 from codecs import open
@@ -11,15 +9,27 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
+# Get version details
+version = {}
+with open(path.join(here, "intercepts/__version__.py")) as f:
+    exec(f.read(), version)
+
 # Get the long description from the README file
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
+
+builtinhandler_module = Extension(
+    "intercepts.builtinhandler", sources=["./intercepts/builtinhandlermodule.c"]
+)
+builtinutils_module = Extension(
+    "intercepts.builtinutils", sources=["./intercepts/builtinutilsmodule.c"]
+)
 
 setup(
     name="intercepts",
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
-    version=__version__,
+    version=version["__version__"],
     description="Intercept function and method calls",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -48,4 +58,5 @@ setup(
         "Source": "https://github.com/dlshriver/intercepts/",
         "Issues": "https://github.com/dlshriver/intercepts/issues",
     },
+    ext_modules=[builtinhandler_module, builtinutils_module],
 )

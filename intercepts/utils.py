@@ -4,11 +4,12 @@ intercepts.utils
 
 A collection of utilities for patching python code.
 """
-
+import atexit
+import ctypes
 import types
-import uuid
 
-from typing import cast, Any, Optional, Tuple, Union
+from typing import Optional, Tuple
+from intercepts.builtinutils import addr, getattr_replacement, setattr_replacement
 
 
 def create_code_like(
@@ -48,17 +49,69 @@ def create_code_like(
     )
 
 
-def get_handler_id(
-    obj: Union[types.FunctionType, types.MethodType]
-) -> Optional[uuid.UUID]:
-    if isinstance(obj, types.FunctionType):
-        consts = obj.__code__.co_consts
-        if len(consts) < 2 or consts[-2] != "~intercept~":
-            return None
-        return consts[-1]
-    elif isinstance(obj, types.MethodType):
-        if hasattr(obj, "handler_id"):
-            return cast(Any, obj).handler_id
-        return None
-    else:
-        raise TypeError("Unsupported handler type: %s" % type(obj))
+def copy_builtin(dst, src):
+    ctypes.memmove(dst, src, 48)
+
+
+def replace_builtin(dst, src):
+    ctypes.memmove(dst + 16, src + 16, 32)
+
+
+def copy_function(dst, src):
+    ctypes.memmove(dst, src, 14 * 8)
+
+
+def replace_function(dst, src):
+    for i in range(15):
+        if i in [2, 3, 4, 5]:
+            ctypes.memmove(dst + 8 * i, src + 8 * i, 8)
+
+
+replace_builtin(addr(getattr_replacement), addr(getattr))
+replace_builtin(addr(setattr_replacement), addr(setattr))
+
+WRAPPER_ASSIGNMENTS = (
+    "__module__",
+    "__name__",
+    "__qualname__",
+    "__doc__",
+    "__annotations__",
+)
+WRAPPER_UPDATES = ("__dict__",)
+
+
+def update_wrapper(
+    wrapper, wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES
+):
+    """Update a wrapper function to look like the wrapped function
+       wrapper is the function to be updated
+       wrapped is the original function
+       assigned is a tuple naming the attributes assigned directly
+       from the wrapped function to the wrapper function (defaults to
+       functools.WRAPPER_ASSIGNMENTS)
+       updated is a tuple naming the attributes of the wrapper that
+       are updated with the corresponding attribute from the wrapped
+       function (defaults to functools.WRAPPER_UPDATES)
+    """
+    # this is copied from https://github.com/python/cpython/blob/master/Lib/functools.py
+    # and modified to use our getattr and setattr copies
+    import sys
+
+    for attr in assigned:
+        try:
+            value = getattr_replacement(wrapped, attr)
+        except AttributeError:
+            pass
+        else:
+            setattr_replacement(wrapper, attr, value)
+    for attr in updated:
+        getattr_replacement(wrapper, attr).update(
+            getattr_replacement(wrapped, attr, {})
+        )
+    wrapper.__wrapped__ = wrapped
+    return wrapper
+
+
+@atexit.register
+def cleanup():
+    pass

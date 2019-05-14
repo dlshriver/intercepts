@@ -1,4 +1,5 @@
 import sys
+import types
 import unittest
 
 import intercepts
@@ -22,8 +23,7 @@ class MockStdout:
         pass
 
 
-@unittest.skip("Known to currently be broken.")
-class TestRegisterBuiltingHandler(unittest.TestCase):
+class TestRegisterBuiltinHandler(unittest.TestCase):
     def setUp(self):
         intercepts.unregister_all()
         sys.stdout = MockStdout()
@@ -43,10 +43,12 @@ class TestRegisterBuiltingHandler(unittest.TestCase):
         )
 
     def test_resister_print(self):
-        self.assertIsNone(
+        self.assertEqual(
             intercepts.register(print, handler),
-            "intercepts.register should return None",
+            print,
+            "intercepts.register should return the handled function",
         )
+        self.assertTrue(isinstance(print, types.BuiltinFunctionType))
 
     def test_resister_print_call(self):
         args = ("test message",)

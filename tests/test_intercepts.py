@@ -37,12 +37,14 @@ class TestRegisterFunctionHandler(unittest.TestCase):
     def setUp(self):
         intercepts.unregister_all()
 
-    def test_resister_func(self):
-        self.assertIsNone(
-            intercepts.register(func, handler), "intercepts.register should return None"
+    def test_register_func(self):
+        self.assertEqual(
+            intercepts.register(func, handler),
+            func,
+            "intercepts.register should return the function to be handled",
         )
 
-    def test_resister_func_no_args(self):
+    def test_register_func_no_args(self):
         result = func_no_args()
         intercepts.register(func_no_args, handler)
         self.assertEqual(
@@ -121,7 +123,7 @@ class TestRegisterFunctionHandler(unittest.TestCase):
             func_no_return(), "second function should no longer be intercepted"
         )
         self.assertEqual(
-            intercepts.registration._INTERCEPTORS,
+            intercepts.registration._HANDLERS,
             {},
             "All function intercept handlers should be unregistered.",
         )

@@ -54,8 +54,8 @@ class TestRegisterMethodHandler(unittest.TestCase):
         t2 = TestClass()
         self.assertEqual(
             t2.method_no_arg(),
-            result,
-            "handler function should not modify output of other methods",
+            ("handled", result),
+            "handler function should modify output of other methods",
         )
 
     def test_register_method_one_arg(self):
@@ -70,8 +70,8 @@ class TestRegisterMethodHandler(unittest.TestCase):
         )
         self.assertEqual(
             t2.method_one_arg(1),
-            result,
-            "handler function should not modify output of other methods",
+            ("handled", result),
+            "handler function should modify output of other methods",
         )
 
     def test_unregister(self):
@@ -113,7 +113,7 @@ class TestRegisterMethodHandler(unittest.TestCase):
             ("handled_0", ("handled", result)),
             "handler function should modify output",
         )
-        intercepts.unregister(t.method_no_arg)
+        intercepts.unregister(t.method_no_arg, 1)
         self.assertEqual(
             t.method_no_arg(),
             ("handled", result),
@@ -127,13 +127,13 @@ class TestRegisterMethodHandler(unittest.TestCase):
         intercepts.register(TestClass.method_no_arg, handler)
         self.assertEqual(
             t.method_no_arg(),
-            ("handled_0", ("handled", result)),
+            ("handled", ("handled_0", result)),
             "handler function should modify output",
         )
-        intercepts.unregister(t.method_no_arg)
+        intercepts.unregister(t.method_no_arg, 1)
         self.assertEqual(
             t.method_no_arg(),
-            ("handled", result),
+            ("handled_0", result),
             "function should still be intercepted",
         )
 
@@ -144,10 +144,10 @@ class TestRegisterMethodHandler(unittest.TestCase):
         intercepts.register(TestClass.method_no_arg, handler)
         self.assertEqual(
             t.method_no_arg(),
-            ("handled_0", ("handled", result)),
+            ("handled", ("handled_0", result)),
             "handler function should modify output",
         )
-        intercepts.unregister(TestClass.method_no_arg)
+        intercepts.unregister(TestClass.method_no_arg, 1)
         self.assertEqual(
             t.method_no_arg(),
             ("handled_0", result),
@@ -164,11 +164,9 @@ class TestRegisterMethodHandler(unittest.TestCase):
             ("handled_0", ("handled", result)),
             "handler function should modify output",
         )
-        intercepts.unregister(TestClass.method_no_arg)
+        intercepts.unregister(TestClass.method_no_arg, 1)
         self.assertEqual(
-            t.method_no_arg(),
-            ("handled_0", result),
-            "method should still be intercepted",
+            t.method_no_arg(), ("handled", result), "method should still be intercepted"
         )
 
     def test_unregister_multiple_handlers_depth_1(self):
@@ -214,7 +212,7 @@ class TestRegisterMethodHandler(unittest.TestCase):
             "second function should no longer be intercepted",
         )
         self.assertEqual(
-            intercepts.registration._INTERCEPTORS,
+            intercepts.registration._HANDLERS,
             {},
             "All function intercept handlers should be unregistered.",
         )
@@ -232,7 +230,7 @@ class TestRegisterMethodHandler(unittest.TestCase):
         t2 = TestClass()
         self.assertEqual(
             t2.method_no_arg(),
-            ("handled", result),
+            ("handled", ("handled", result)),
             "handler function should modify output of t2",
         )
         self.assertEqual(
@@ -254,12 +252,12 @@ class TestRegisterMethodHandler(unittest.TestCase):
         t2 = TestClass()
         self.assertEqual(
             t2.method_no_arg(),
-            ("handled", result),
+            ("handled", ("handled_0", result)),
             "handler function should modify output of t2",
         )
         self.assertEqual(
             t.method_no_arg(),
-            ("handled_0", ("handled", result)),
+            ("handled", ("handled_0", result)),
             "handler function should modify output of t",
         )
 
