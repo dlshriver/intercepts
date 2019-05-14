@@ -5,4 +5,5 @@ python:
   - "3.6"
   - "3.7"
 script:
+  - pip install -e .
   - python -m unittest discover -v tests
