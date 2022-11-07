@@ -42,6 +42,7 @@ jobs:
 
       - name: Run Test Suite
         run: |
+          . .venv/bin/activate
           coverage run
           coverage combine
           coverage xml
