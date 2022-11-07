@@ -10,18 +10,17 @@ from ..utils import WORD_SIZE
 
 # TODO(dlshriver) clean this up so we're not littering the module's name space
 
-_id_bytes = ctypes.string_at(id(id), 8 * WORD_SIZE)
-_id = ctypes.cast(
-    _id_bytes,
-    ctypes.py_object,
-).value
-
 with open(sys.executable, "rb") as f:
     python_exe_bytes = f.read()
-if python_exe_bytes[:4] != b"\x7fELF":  # pragma: no cover
+if python_exe_bytes[:0x04] != b"\x7fELF":  # pragma: no cover
     raise ValueError("python is not an ELF")
-if python_exe_bytes[4] != 0x02:  # pragma: no cover
+if python_exe_bytes[0x04] != 0x02:  # pragma: no cover
     raise NotImplementedError("We only support 64-bit for now.")
+if [None, "little", "big"][python_exe_bytes[0x05]] != sys.byteorder:  # pragma: no cover
+    # TODO(dlshriver): can we deal with this?
+    raise ValueError("System and executable endianness do not match.")
+if python_exe_bytes[0x05] != 1:  # pragma: no cover
+    raise NotImplementedError("We only little endianness for now.")
 if python_exe_bytes[0x12:0x14] == b"\x3E\x00":
     # TODO(dlshriver): automate instruction generation to avoid having to update by hand
     INSTRUCTIONS = b"\xf3\x0f\x1e\xfa\x48\x83\xec\x38\x48\x89\x7c\x24\x18\x48\x89\x74\x24\x10\x48\x89\x54\x24\x08\x48\x8b\x54\x24\x08\x48\x8b\x44\x24\x10\x48\x89\xc6\x48\xbf\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xb8\xbb\xbb\xbb\xbb\xff\xd0\x48\x89\x44\x24\x28\x48\x8b\x44\x24\x28\x48\x83\xc4\x38\xc3"
@@ -140,6 +139,12 @@ if PyObject_Call_address is None:  # pragma: no cover
 
 CDLL = ctypes.CDLL(ctypes.util.find_library("c"))
 pagesize = os.sysconf("SC_PAGE_SIZE")
+
+_id_bytes = ctypes.string_at(id(id), 8 * WORD_SIZE)
+_id = ctypes.cast(
+    _id_bytes,
+    ctypes.py_object,
+).value
 
 
 def get_addr(obj):
