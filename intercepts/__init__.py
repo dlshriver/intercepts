@@ -15,9 +15,9 @@ Usage:
     >>> print("Hello world")
     dlrow olleH
 
-:copyright: (c) 2019 by David Shriver.
+:copyright: (c) 2022 by David Shriver.
 """
-from .registration import register, unregister, unregister_all
 from .__version__ import __version__
+from .registration import register, unregister, unregister_all
 
 __all__ = ["register", "unregister", "unregister_all"]

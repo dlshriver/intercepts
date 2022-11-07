@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/**"
+      - "intercepts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/**"
+      - "intercepts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9, 3.10, 3.11]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Intercepts
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install .[test]
+
+      - name: Run Test Suite
+        run: |
+          coverage run
+          coverage combine
+          coverage xml
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3

@@ -105,4 +105,3 @@ ENV/
 .vscode/
 *private*
 tmp/
-.env.d/

@@ -4,107 +4,31 @@ intercepts.registration
 
 This module implements the intercepts registration api.
 """
+from __future__ import annotations
 
 import atexit
-import sys
+import ctypes
+import struct
 import types
+from collections import defaultdict
+from functools import update_wrapper
+from typing import Any, Callable, Type, TypeVar
 
-from functools import partial  # , update_wrapper
-from typing import Callable, Dict, List, Union
+from ._introspection import get_addr, replace_cfunction
+from .utils import WORD_SIZE
 
-import intercepts.builtinhandler as builtinhandler
-
-from .functypes import PyCFunctionObject
-from .utils import (
-    addr,
-    create_code_like,
-    copy_builtin,
-    replace_builtin,
-    copy_function,
-    replace_function,
-    update_wrapper,
-)
-
-MethodOrFunction = Union[types.FunctionType, types.MethodType]
+T = TypeVar("T")
+_HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
 
 
-_HANDLERS = {}  # type: Dict[int, List[Callable]]
+def _check_intercept(obj, handler):
+    if not isinstance(handler, types.FunctionType):
+        raise ValueError("Argument `handler` must be a function.")
+    if obj == handler:
+        raise ValueError("A function cannot handle itself")
 
 
-def _intercept_handler(*args, **kwargs):
-    consts = sys._getframe(0).f_code.co_consts
-    func_id = consts[-1]
-    _func = _HANDLERS[func_id][0]
-    handler = _func
-    for _handler in _HANDLERS[func_id][2:]:
-        handler = update_wrapper(partial(_handler, handler), _func)
-    result = handler(*args, **kwargs)
-    return result
-
-
-def register_builtin(func, handler):
-    func_addr = addr(func)
-    if func_addr not in _HANDLERS:
-        func_copy = PyCFunctionObject()
-        copy_builtin(addr(func_copy), func_addr)
-        _handler = builtinhandler.get_handler(func_addr)
-        _HANDLERS[func_addr] = [func_copy, _handler]
-        replace_builtin(func_addr, addr(_handler))
-    _HANDLERS[func_addr].append(handler)
-    return func
-
-
-def register_function(
-    func: types.FunctionType, handler: types.FunctionType
-) -> types.FunctionType:
-    r"""Registers an intercept handler for a function.
-
-    :param func: The function to intercept.
-    :param handler: A function to handle the intercept.
-    """
-    func_addr = addr(func)
-    if func_addr not in _HANDLERS:
-        handler_code = create_code_like(
-            _intercept_handler.__code__,
-            consts=(_intercept_handler.__code__.co_consts + (func_addr,)),
-            name=func.__name__,
-        )
-        global_dict = _intercept_handler.__globals__
-        _handler = types.FunctionType(
-            handler_code,
-            global_dict,
-            func.__name__,
-            func.__defaults__,
-            func.__closure__,
-        )
-        _handler.__code__ = handler_code
-
-        handler_addr = addr(_handler)
-
-        def func_copy(*args, **kwargs):
-            pass
-
-        copy_function(addr(func_copy), func_addr)
-
-        _HANDLERS[func_addr] = [func_copy, _handler]
-        replace_function(func_addr, handler_addr)
-    _HANDLERS[func_addr].append(handler)
-    return func
-
-
-def register_method(
-    method: types.MethodType, handler: types.FunctionType
-) -> types.MethodType:
-    r"""Registers an intercept handler for a method.
-
-    :param method: The method to intercept.
-    :param handler: A function to handle the intercept.
-    """
-    register_function(method.__func__, handler)
-    return method
-
-
-def register(obj: MethodOrFunction, handler: types.FunctionType) -> MethodOrFunction:
+def register(obj: T, handler: Callable) -> T:
     r"""Registers an intercept handler.
 
     :param obj: The callable to intercept.
@@ -119,62 +43,145 @@ def register(obj: MethodOrFunction, handler: types.FunctionType) -> MethodOrFunc
         >>> increment(43)
         42
     """
-    if not isinstance(handler, types.FunctionType):
-        raise ValueError("Argument `handler` must be a function.")
-    if not callable(obj):
-        raise TypeError("Cannot intercept non-callable objects")
-    if obj == handler:
-        raise ValueError("A function cannot handle itself")
-
-    if isinstance(obj, types.BuiltinFunctionType):
-        return register_builtin(obj, handler)
-    elif isinstance(obj, types.FunctionType):
-        return register_function(obj, handler)
-    elif isinstance(obj, types.MethodType):
-        return register_method(obj, handler)
-    else:
-        raise NotImplementedError("Unsupported type: {}".format(repr(type(obj))))
+    _register: dict[Type, Callable[[Any, Callable], Any]] = {
+        types.BuiltinFunctionType: _register_builtin,
+        types.FunctionType: _register_function,
+        types.MethodType: _register_method,
+    }
+    obj_type = type(obj)
+    if obj_type not in _register:
+        raise NotImplementedError(f"Unsupported type: {obj_type}")
+    _check_intercept(obj, handler)
+    return _register[obj_type](obj, handler)
 
 
-def unregister(obj: MethodOrFunction, depth: int = -1) -> MethodOrFunction:
+def _register_builtin(obj: types.BuiltinFunctionType, handler: Callable):
+    obj_addr = get_addr(obj)
+    _obj_bytes = ctypes.string_at(obj_addr, 8 * WORD_SIZE)
+    _obj_method_def_bytes = ctypes.string_at(
+        struct.unpack(
+            "L" * 1,
+            ctypes.string_at(obj_addr + 2 * WORD_SIZE, 1 * WORD_SIZE),
+        )[0],
+        4 * WORD_SIZE,
+    )
+    _obj = ctypes.cast(
+        _obj_bytes,
+        ctypes.py_object,
+    ).value
+
+    globals_dict = handler.__globals__.copy()
+    globals_dict["_"] = _obj
+    _handler = types.FunctionType(
+        code=handler.__code__,
+        globals=globals_dict,
+        name=handler.__name__,
+        argdefs=handler.__defaults__,
+        closure=handler.__closure__,
+    )
+
+    refs = replace_cfunction(obj, _handler)
+    _HANDLERS[obj_addr, type(obj)].append(
+        (refs, _handler, _obj_method_def_bytes, _obj_bytes)
+    )
+
+    return obj
+
+
+def _register_function(
+    obj: types.FunctionType, handler: Callable
+) -> types.FunctionType:
+    _obj = types.FunctionType(
+        code=obj.__code__,
+        globals=obj.__globals__,
+        name=obj.__name__,
+        argdefs=obj.__defaults__,
+        closure=obj.__closure__,
+    )
+
+    globals_dict = handler.__globals__.copy()
+    globals_dict["_"] = _obj
+    _handler = types.FunctionType(
+        code=handler.__code__,
+        globals=globals_dict,
+        name=handler.__name__,
+        argdefs=handler.__defaults__,
+        closure=handler.__closure__,
+    )
+    update_wrapper(_handler, obj)
+    _HANDLERS[get_addr(obj), type(obj)].append((_handler, _obj))
+
+    ctypes.memmove(
+        get_addr(obj) + 2 * WORD_SIZE,
+        get_addr(_handler) + 2 * WORD_SIZE,
+        5 * WORD_SIZE,
+    )
+    return obj
+
+
+def _register_method(obj: types.MethodType, handler: Callable) -> types.MethodType:
+    _register_function(obj.__func__, handler)
+    return obj
+
+
+def unregister(obj, depth: int | None = None):
     r"""Unregisters the handlers for an object.
 
     :param obj: The callable for which to unregister handlers.
     :param depth: (optional) The maximum number of handlers to unregister. Defaults to all.
     """
-    # TODO : use an isinstance replacement
-    if isinstance(obj, (types.BuiltinFunctionType, types.FunctionType)):
-        func_addr = addr(obj)
-    else:
-        func_addr = addr(obj.__func__)
-    handlers = _HANDLERS[func_addr]
-    if depth < 0 or len(handlers) - depth <= 2:
-        orig_func = handlers[0]
-        if isinstance(orig_func, types.BuiltinFunctionType):
-            replace_builtin(func_addr, addr(orig_func))
-        elif isinstance(orig_func, types.FunctionType):
-            replace_function(func_addr, addr(orig_func))
-        else:
-            raise ValueError("Unknown type of handled function: %s" % type(orig_func))
-        del _HANDLERS[func_addr]
-        assert func_addr not in _HANDLERS
-    else:
-        _HANDLERS[func_addr] = handlers[:-depth]
-    return obj
+    obj_type = type(obj)
+    _unregister: dict[Type, Callable] = {
+        types.BuiltinFunctionType: _unregister_builtin,
+        types.FunctionType: _unregister_function,
+        types.MethodType: _unregister_method,
+    }
+    if obj_type not in _unregister:
+        raise NotImplementedError(f"Unsupported type: {obj_type}")
+    return _unregister[obj_type](obj, depth=depth)
+
+
+def _unregister_builtin_addr(addr: int, depth: int | None = None):
+    handlers = _HANDLERS[addr, types.BuiltinFunctionType]
+    if depth is None:
+        depth = handlers.__len__()
+    while handlers.__len__() and depth > 0:
+        depth -= 1
+        *_, _obj_bytes = handlers.pop()
+        ctypes.memmove(addr + 2 * WORD_SIZE, _obj_bytes[2 * WORD_SIZE :], 6 * WORD_SIZE)
+
+
+def _unregister_builtin(obj: types.BuiltinFunctionType, depth: int | None = None):
+    _unregister_builtin_addr(get_addr(obj), depth=depth)
+
+
+def _unregister_function_addr(addr: int, depth: int | None = None):
+    handlers = _HANDLERS[addr, types.FunctionType]
+    if depth is None:
+        depth = len(handlers)
+    while len(handlers) and depth > 0:
+        depth -= 1
+        _, _obj = handlers.pop()
+        ctypes.memmove(
+            addr + 2 * WORD_SIZE, get_addr(_obj) + 2 * WORD_SIZE, 6 * WORD_SIZE
+        )
+
+
+def _unregister_function(obj: types.FunctionType, depth: int | None = None):
+    _unregister_function_addr(get_addr(obj), depth=depth)
+
+
+def _unregister_method(obj: types.MethodType, depth: int | None = None):
+    _unregister_function(obj.__func__, depth=depth)
 
 
 @atexit.register
 def unregister_all() -> None:
-    r"""Unregisters all handlers.
-    """
-    global _HANDLERS
-    for func_addr, handlers in _HANDLERS.items():
-        orig_func = handlers[0]
-        if isinstance(orig_func, types.BuiltinFunctionType):
-            replace_builtin(func_addr, addr(orig_func))
-        elif isinstance(orig_func, types.FunctionType):
-            replace_function(func_addr, addr(orig_func))
-        else:
-            raise ValueError("Unknown type of handled function: %s" % type(orig_func))
-    _HANDLERS = {}
-
+    r"""Unregisters all handlers."""
+    _unregister: dict[Type, Callable] = {
+        types.BuiltinFunctionType: _unregister_builtin_addr,
+        types.FunctionType: _unregister_function_addr,
+    }
+    for (addr, callable_type) in _HANDLERS:
+        _unregister[callable_type](addr)
+    _HANDLERS.clear()

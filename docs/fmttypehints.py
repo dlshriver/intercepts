@@ -1,10 +1,10 @@
 import inspect
 import types
 import typing
+from typing import Union
 
 from sphinx.application import Sphinx
 from sphinx.ext.autodoc import Options
-from typing import Union
 
 
 def format_type(type_hint) -> str:
