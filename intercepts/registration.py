@@ -14,7 +14,7 @@ from collections import defaultdict
 from functools import update_wrapper
 from typing import Any, Callable, Type, TypeVar
 
-from ._introspection import get_addr, replace_cfunction, WORD_SIZE
+from ._introspection import WORD_SIZE, get_addr, replace_cfunction
 
 T = TypeVar("T")
 _HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
