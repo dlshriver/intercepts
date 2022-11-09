@@ -14,7 +14,7 @@ from collections import defaultdict
 from functools import update_wrapper
 from typing import Any, Callable, Type, TypeVar
 
-from ._introspection import WORD_SIZE, get_addr, replace_cfunction
+from ._introspection import PTR_SIZE, get_addr, replace_cfunction
 
 T = TypeVar("T")
 _HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
@@ -56,13 +56,13 @@ def register(obj: T, handler: Callable) -> T:
 
 def _register_builtin(obj: types.BuiltinFunctionType, handler: Callable):
     obj_addr = get_addr(obj)
-    _obj_bytes = ctypes.string_at(obj_addr, 8 * WORD_SIZE)
+    _obj_bytes = ctypes.string_at(obj_addr, 8 * PTR_SIZE)
     _obj_method_def_bytes = ctypes.string_at(
         struct.unpack(
-            "L" * 1,
-            ctypes.string_at(obj_addr + 2 * WORD_SIZE, 1 * WORD_SIZE),
+            "N",
+            ctypes.string_at(obj_addr + 2 * PTR_SIZE, PTR_SIZE),
         )[0],
-        4 * WORD_SIZE,
+        4 * PTR_SIZE,
     )
     _obj = ctypes.cast(
         _obj_bytes,
@@ -111,9 +111,9 @@ def _register_function(
     _HANDLERS[get_addr(obj), type(obj)].append((_handler, _obj))
 
     ctypes.memmove(
-        get_addr(obj) + 2 * WORD_SIZE,
-        get_addr(_handler) + 2 * WORD_SIZE,
-        5 * WORD_SIZE,
+        get_addr(obj) + 2 * PTR_SIZE,
+        get_addr(_handler) + 2 * PTR_SIZE,
+        5 * PTR_SIZE,
     )
     return obj
 
@@ -147,7 +147,7 @@ def _unregister_builtin_addr(addr: int, depth: int | None = None):
     while handlers.__len__() and depth > 0:
         depth -= 1
         *_, _obj_bytes = handlers.pop()
-        ctypes.memmove(addr + 2 * WORD_SIZE, _obj_bytes[2 * WORD_SIZE :], 6 * WORD_SIZE)
+        ctypes.memmove(addr + 2 * PTR_SIZE, _obj_bytes[2 * PTR_SIZE :], 6 * PTR_SIZE)
 
 
 def _unregister_builtin(obj: types.BuiltinFunctionType, depth: int | None = None):
@@ -161,9 +161,7 @@ def _unregister_function_addr(addr: int, depth: int | None = None):
     while len(handlers) and depth > 0:
         depth -= 1
         _, _obj = handlers.pop()
-        ctypes.memmove(
-            addr + 2 * WORD_SIZE, get_addr(_obj) + 2 * WORD_SIZE, 6 * WORD_SIZE
-        )
+        ctypes.memmove(addr + 2 * PTR_SIZE, get_addr(_obj) + 2 * PTR_SIZE, 6 * PTR_SIZE)
 
 
 def _unregister_function(obj: types.FunctionType, depth: int | None = None):
