@@ -36,8 +36,6 @@ jobs:
 
       - name: Install Intercepts
         run: |
-          python -m venv .venv
-          . .venv/bin/activate
           pip install --upgrade pip
           pip install .[test]
 
