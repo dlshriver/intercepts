@@ -179,6 +179,6 @@ def unregister_all() -> None:
         types.BuiltinFunctionType: _unregister_builtin_addr,
         types.FunctionType: _unregister_function_addr,
     }
-    for (addr, callable_type) in _HANDLERS:
+    for addr, callable_type in _HANDLERS:
         _unregister[callable_type](addr)
     _HANDLERS.clear()
