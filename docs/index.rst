@@ -7,16 +7,24 @@ Intercepts
 ==========
 
 .. image:: https://img.shields.io/github/license/dlshriver/intercepts.svg
-    :target: https://github.com/dlshriver/intercepts/blob/master/LICENSE
+   :target: https://github.com/dlshriver/intercepts/blob/master/LICENSE
+   :alt: License
 
 .. image:: https://img.shields.io/pypi/v/intercepts.svg
-    :target: https://pypi.org/project/intercepts/
+   :target: https://pypi.org/project/intercepts/
+   :alt: Version
 
 .. image:: https://github.com/dlshriver/intercepts/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/dlshriver/intercepts/actions/workflows/ci.yml
+   :target: https://github.com/dlshriver/intercepts/actions/workflows/ci.yml
+   :alt: Build Status
 
 .. image:: https://codecov.io/gh/dlshriver/intercepts/branch/main/graph/badge.svg?token=zsQBFINrdo
-    :target: https://codecov.io/gh/dlshriver/intercepts
+   :target: https://codecov.io/gh/dlshriver/intercepts
+   :alt: Codecov.io
+   
+.. image:: https://www.codefactor.io/repository/github/dlshriver/intercepts/badge
+   :target: https://www.codefactor.io/repository/github/dlshriver/intercepts
+   :alt: CodeFactor
 
 
 Intercepts allows you to intercept function calls in Python and handle them in 

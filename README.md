@@ -3,6 +3,7 @@ Intercepts
 
 [![CI Status](https://github.com/dlshriver/intercepts/actions/workflows/ci.yml/badge.svg)](https://github.com/dlshriver/intercepts/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dlshriver/intercepts/branch/main/graph/badge.svg?token=zsQBFINrdo)](https://codecov.io/gh/dlshriver/intercepts)
+[![CodeFactor](https://www.codefactor.io/repository/github/dlshriver/intercepts/badge)](https://www.codefactor.io/repository/github/dlshriver/intercepts)
 [![PyPI](https://img.shields.io/pypi/v/intercepts.svg)](https://pypi.org/project/intercepts/)
 [![License](https://img.shields.io/github/license/dlshriver/intercepts.svg)](https://github.com/dlshriver/intercepts/blob/master/LICENSE)
 
