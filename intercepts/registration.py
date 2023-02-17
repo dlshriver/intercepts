@@ -32,6 +32,7 @@ def register(obj: T, handler: Callable) -> T:
 
     :param obj: The callable to intercept.
     :param handler: A function to handle the intercept.
+    :returns: The intercepted callable.
 
     Usage::
 
@@ -123,11 +124,12 @@ def _register_method(obj: types.MethodType, handler: Callable) -> types.MethodTy
     return obj
 
 
-def unregister(obj, depth: int | None = None):
+def unregister(obj: T, depth: int | None = None) -> T:
     r"""Unregisters the handlers for an object.
 
     :param obj: The callable for which to unregister handlers.
     :param depth: (optional) The maximum number of handlers to unregister. Defaults to all.
+    :returns: The previously intercepted callable.
     """
     obj_type = type(obj)
     _unregister: dict[Type, Callable] = {

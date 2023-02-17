@@ -53,7 +53,7 @@ dlrow olleH
 Installation
 ------------
 
-Intercepts requires Python 3.7+ and can be installed using `pip`.
+Intercepts requires Python 3.7+ on Linux or Windows and can be installed using `pip`.
 
     $ pip install intercepts
 

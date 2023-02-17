@@ -15,7 +15,7 @@ Usage:
     >>> print("Hello world")
     dlrow olleH
 
-:copyright: (c) 2022 by David Shriver.
+:copyright: David Shriver, 2023
 """
 from .__version__ import __version__
 from .registration import register, unregister, unregister_all

@@ -1,9 +1,10 @@
 .. _quickstart:
 
+.. module:: intercepts
+    :noindex:
+
 Quickstart
 ==========
-
-.. module:: intercepts
 
 Ready to get started? This page provides an introduction on getting started
 with intercepts.
@@ -18,29 +19,35 @@ Register an Intercept
 
 Intercepting calls with intercepts is very simple.
 
-Begin by importing the intercepts module::
+Begin by importing the intercepts module.
+
+.. code-block:: python
 
     >>> import intercepts
 
-Now lets define an intercept handler, like so::
+Now lets define an intercept handler, like so:
 
-   def handler(func, *args, **kwargs):
-        return func(*args, **kwargs) * 2
+.. code-block:: python
+
+   def handler(*args, **kwargs):
+        return _(*args, **kwargs) * 2
 
 This intercept handler simply doubles the output of the original call.
 In general, an intercept handler is a function that will be called in
 place of the original call. The handler will receive the original
-function as its first argument, as well as all of the parameters passed
-to the original call. In this case, ``func`` will be a reference to the
-original function, and ``args`` and ``kwargs`` will be the parameters
-passed to the original call.
+all of the parameters passed to the original call. It also has access 
+to a special variable ``_``, which is a reference to the intercepted method.
 
-Now that we have defined a handler, we can register it to intercept a call.
+Now that we have defined a handler, we can register it to intercept a call with :func:`register`.
+
+.. code-block:: python
 
     >>> intercepts.register(sum, handler)
 
 That's it. Now any call to sum, in any module will be intercepted by
 ``handler``, and its result will be doubled.
+
+.. code-block:: python
 
     >>> sum([1, 2, 3, 4, 5, 6])
     42
@@ -49,19 +56,23 @@ Stacking Intercepts
 -------------------
 
 Multiple intercept handlers can be registered for a Python call.
-For example, we can define pre and post processing handlers, such as::
+For example, we can define pre and post processing handlers, such as:
 
-    def pre_handler(func, *args, **kwargs):
-        print("Executing function:", func.__name__)
-        return func(*args, **kwargs)
+.. code-block:: python
 
-    def post_handler(func, *args, **kwargs):
-        result = func(*args, **kwargs)
-        print("Executed function:", func.__name__)
+    def pre_handler(*args, **kwargs):
+        print("Executing function:", _.__name__)
+        return _(*args, **kwargs)
+
+    def post_handler(*args, **kwargs):
+        result = _(*args, **kwargs)
+        print("Executed function:", _.__name__)
         return result
 
 Registering these handlers for a function will print a message before and
 after that methods execution.
+
+.. code-block:: python
 
     >>> intercepts.register(sum, pre_handler)
     >>> intercepts.register(sum, post_handler)
@@ -72,27 +83,33 @@ after that methods execution.
 
 The same handler can even be applied multiple times.
 
+.. code-block:: python
+
     >>> intercepts.register(sum, handler)
     >>> intercepts.register(sum, handler)
     >>> sum([1, 2, 3, 4, 5, 6])
     84
 
 Intercept handlers are stored as a stack, meaning that the last
-handler registered will be the first one that is executed. For example::
+handler registered will be the first one that is executed. For example:
 
-    def handler_0(func, *args, **kwargs):
+.. code-block:: python
+
+    def handler_0(*args, **kwargs):
         print("handler 0")
-        return func(*args, **kwargs)
+        return _(*args, **kwargs)
 
-    def handler_1(func, *args, **kwargs):
+    def handler_1(*args, **kwargs):
         print("handler 1")
-        return func(*args, **kwargs)
+        return _(*args, **kwargs)
 
     intercepts.register(abs, handler_0)
     intercepts.register(abs, handler_1)
 
 In this example, a call to ``abs`` will print ``handler 1`` and then
 ``handler_0``.
+
+.. code-block:: python
 
     >>> abs(-42)
     handler 1
@@ -102,17 +119,23 @@ In this example, a call to ``abs`` will print ``handler 1`` and then
 Unregister an Intercept
 -----------------------
 
-To unregister the intercept handlers for a function, use the ``unregister`` function::
+To unregister the intercept handlers for a function, use the :func:`unregister` function.
+
+.. code-block:: python
 
     >>> intercepts.unregister(sum)
 
 This will remove all handlers from the ``sum`` function.
 
-A value can also be passed to ``unregister`` to remove the top ``depth``
-handlers from the stack of intercept handlers for a function::
+An integer value, ``depth`` can also be passed to :func:`unregister` to remove 
+the last ``depth`` handlers from the function.
+
+.. code-block:: python
 
     >>> intercepts.unregister(sum, depth=1)
 
-Finally, you can unregister all intercept handlers with::
+Finally, you can unregister all intercept handlers with :func:`unregister_all`.
+
+.. code-block:: python
 
     >>> intercepts.unregister_all()

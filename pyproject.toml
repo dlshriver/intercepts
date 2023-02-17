@@ -34,7 +34,7 @@ dev = ["mypy", "black", "isort", "coverage", "pytest"]
 lint = ["mypy"]
 style = ["black", "isort"]
 test = ["coverage", "pytest"]
-docs = ["sphinx"]
+docs = ["furo", "sphinx"]
 
 [tool.setuptools.dynamic]
 version = { attr = "intercepts.__version__.__version__" }
