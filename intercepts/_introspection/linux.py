@@ -21,7 +21,7 @@ if [None, "little", "big"][
     raise ValueError("System and executable endianness do not match.")
 if _python_exe_bytes[0x12:0x14] == b"\x3E\x00":
     # TODO(dlshriver): automate instruction generation to avoid having to update by hand
-    INSTRUCTIONS = b"\x48\x83\xec\x38\x48\x89\x7c\x24\x18\x48\x89\x74\x24\x10\x48\x89\x54\x24\x08\x48\x8b\x54\x24\x08\x48\x8b\x44\x24\x10\x48\xb9\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\x48\x89\xc6\x48\xbf\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xff\xd1\x48\x89\x44\x24\x28\x48\x8b\x44\x24\x28\x48\x83\xc4\x38\xc3"
+    INSTRUCTIONS = bytes.fromhex("48bfaaaaaaaaaaaaaaaa48b8bbbbbbbbbbbbbbbbffe0")
 else:  # pragma: no cover
     raise NotImplementedError("We only support AMD x86-64 for now.")
 
