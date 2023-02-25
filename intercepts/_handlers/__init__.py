@@ -7,7 +7,7 @@ import typing
 
 from .base import PTR_SIZE, get_addr, replace_cfunction_base
 
-if platform.machine() != "x86_64":  # pragma: no cover
+if platform.machine() not in {"x86_64", "AMD64"}:  # pragma: no cover
     raise ImportError(f"Unfortunately {platform.machine()} is not currently supported.")
 if sys.byteorder != "little":  # pragma: no cover
     raise ImportError(
