@@ -3,7 +3,8 @@ SRC_DIR ?= .
 BUILD_DIR ?= build
 OBJDUMP ?= objdump
 
-.PRECIOUS: $(BUILD_DIR)/%.o
+# uncomment the following to keep obj files around
+# .PRECIOUS: $(BUILD_DIR)/%.o
 
 all: linux mac windows
 
