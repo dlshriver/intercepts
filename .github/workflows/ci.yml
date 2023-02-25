@@ -35,11 +35,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Intercepts
+        shell: bash
         run: |
           pip install --upgrade pip
           pip install .[test]
 
       - name: Run Test Suite
+        shell: bash
         run: |
           coverage run
           coverage combine

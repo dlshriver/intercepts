@@ -12,9 +12,9 @@ import struct
 import types
 from collections import defaultdict
 from functools import update_wrapper
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, Type, TypeVar, cast
 
-from ._introspection import PTR_SIZE, get_addr, replace_cfunction
+from ._handlers import PTR_SIZE, get_addr, replace_cfunction
 
 T = TypeVar("T")
 _HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
@@ -66,7 +66,7 @@ def _register_builtin(obj: types.BuiltinFunctionType, handler: Callable):
         4 * PTR_SIZE,
     )
     _obj = ctypes.cast(
-        _obj_bytes,
+        cast(ctypes._SimpleCData, _obj_bytes),
         ctypes.py_object,
     ).value
 
@@ -139,7 +139,8 @@ def unregister(obj: T, depth: int | None = None) -> T:
     }
     if obj_type not in _unregister:
         raise NotImplementedError(f"Unsupported type: {obj_type}")
-    return _unregister[obj_type](obj, depth=depth)
+    _unregister[obj_type](obj, depth=depth)
+    return obj
 
 
 def _unregister_builtin_addr(addr: int, depth: int | None = None):
