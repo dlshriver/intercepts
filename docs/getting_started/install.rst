@@ -13,7 +13,7 @@ Intercepts requires Python 3.7+ on Linux or Windows.
 There are currently no additional dependencies.
 To install intercepts, run::
 
-    $ pip install requests
+    $ pip install intercepts
 
 Or, to install the latest version from github, run::
 
