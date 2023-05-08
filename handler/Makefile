@@ -19,6 +19,12 @@ linux: $(BUILD_DIR)/x86_64-unknown-linux.hex
 mac: $(BUILD_DIR)/x86_64-apple-darwin.hex
 windows: $(BUILD_DIR)/x86_64-pc-windows.hex
 
+linux-aarch64:
+	mkdir -p $(BUILD_DIR)
+	clang -c -O3 -Werror -target aarch64-unknown-linux -o $(BUILD_DIR)/aarch64-unknown-linux.o ./handler_ptr.c -mcmodel=tiny
+	ld $(BUILD_DIR)/aarch64-unknown-linux.o -o $(BUILD_DIR)/a.out
+	objdump -s -j .text $(BUILD_DIR)/a.out | awk '/\.text/{flag=1; next} flag{print}' | awk -F' ' '{print $$2 $$3 $$4 $$5}' | tr -d ' \n' > $(BUILD_DIR)/aarch64-unknown-linux.hex
+
 clean:
 	rm -f $(BUILD_DIR)/*.o
 	rm -f $(BUILD_DIR)/*.hex
