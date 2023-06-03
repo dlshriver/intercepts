@@ -7,9 +7,11 @@ import platform
 
 from .base import PyObject_Call_address
 
-if platform.machine() == "aarch64" :
-    INSTR_TEMPLATE = bytes.fromhex("c30000586000005860001fd61f2003d5aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbb")
-else :
+if platform.machine() == "aarch64":
+    INSTR_TEMPLATE = bytes.fromhex(
+        "c30000586000005860001fd61f2003d5aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbb"
+    )
+else:
     INSTR_TEMPLATE = bytes.fromhex("48bfaaaaaaaaaaaaaaaa48b8bbbbbbbbbbbbbbbbffe0")
 _i = INSTR_TEMPLATE.index(b"\xbb" * 8)
 INSTR_TEMPLATE = INSTR_TEMPLATE[:_i] + PyObject_Call_address + INSTR_TEMPLATE[_i + 8 :]
