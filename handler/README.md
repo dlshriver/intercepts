@@ -18,9 +18,9 @@ corresponding location in the intercepts package.
 
 ## Build Targets
 
-We currently only support the x86_64 (or amd64) architecture.
+We currently only support the x86_64 (amd64) and armv8 (aarch64) architecture.
 We support both linux and windows (with mac support hopefully coming soon).
 
-- linux: x86_64-unknown-linux
-- windows: x86_64-pc-windows
+- linux: x86_64 and armv8
+- windows: x86_64 (and untested on armv8)
 
