@@ -5,12 +5,6 @@ import ctypes.util
 import mmap
 import typing
 
-from .base import PyObject_Call_address
-
-INSTR_TEMPLATE = bytes.fromhex("48b9aaaaaaaaaaaaaaaa48b8bbbbbbbbbbbbbbbb48ffe0")
-_i = INSTR_TEMPLATE.index(b"\xbb" * 8)
-INSTR_TEMPLATE = INSTR_TEMPLATE[:_i] + PyObject_Call_address + INSTR_TEMPLATE[_i + 8 :]
-
 KERNEL32 = ctypes.cdll.kernel32
 KERNEL32.VirtualAlloc.argtypes = [
     ctypes.c_void_p,
@@ -42,7 +36,7 @@ def malloc(size: int) -> typing.Tuple[int, ctypes.Array[ctypes.c_char]]:
     return page_aligned_addr, page
 
 
-def mprotect(addr, size):
+def mprotect(addr: int, size: int) -> None:
     dummy = ctypes.create_string_buffer(ctypes.sizeof(ctypes.c_size_t))
     _result = KERNEL32.VirtualProtect(
         addr, size, PAGE_EXECUTE_READ, ctypes.addressof(dummy)
@@ -52,4 +46,4 @@ def mprotect(addr, size):
         raise Exception("VirtualProtect failed")
 
 
-__all__ = ["malloc", "mprotect", "INSTR_TEMPLATE"]
+__all__ = ["malloc", "mprotect"]
