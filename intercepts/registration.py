@@ -55,7 +55,9 @@ def register(obj: T, handler: Callable) -> T:
     return _register[obj_type](obj, handler)
 
 
-def _register_builtin(obj: types.BuiltinFunctionType, handler: Callable):
+def _register_builtin(
+    obj: types.BuiltinFunctionType, handler: Callable
+) -> types.BuiltinFunctionType:
     obj_addr = get_addr(obj)
     _obj_bytes = ctypes.string_at(obj_addr, 8 * PTR_SIZE)
     _obj_method_def_bytes = ctypes.string_at(
