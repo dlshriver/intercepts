@@ -104,4 +104,4 @@ ENV/
 
 .vscode/
 *private*
-tmp/
+tmp*/
