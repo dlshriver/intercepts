@@ -4,6 +4,7 @@ import ctypes
 import ctypes.util
 import platform
 import struct
+import sys
 import types
 import typing
 
@@ -12,18 +13,28 @@ PyObject_Call_address: typing.Final[bytes] = ctypes.string_at(
     ctypes.addressof(ctypes.pythonapi.PyObject_Call), 8
 )
 
-_INSTRS_aarch64: typing.Final[bytes] = bytes.fromhex(
+_INSTR_aarch64_linux: typing.Final[bytes] = bytes.fromhex(
     "0800009009000090001140f9230d40f960001fd61f2003d5bbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaa"
 )
-_INSTR_x86_64: typing.Final[bytes] = bytes.fromhex(
+_INSTR_amd64_linux: typing.Final[bytes] = bytes.fromhex(
     "488b0509000000488b3d0a000000ffe0bbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaa"
 )
-INSTR_TEMPLATES: typing.Final[typing.Dict[str, bytes]] = {
-    "aarch64": _INSTRS_aarch64,
-    "x86_64": _INSTR_x86_64,
-    "amd64": _INSTR_x86_64,
+_INSTR_amd64_windows: typing.Final[bytes] = bytes.fromhex(
+    "488b0511000000488b0d1200000048ffe00f1f8000000000bbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaa"
+)
+INSTR_TEMPLATES: typing.Final[typing.Dict[str, typing.Dict[str, bytes]]] = {
+    "linux": {
+        "aarch64": _INSTR_aarch64_linux,
+        "x86_64": _INSTR_amd64_linux,
+        "amd64": _INSTR_amd64_linux,
+    },
+    "win32": {
+        "aarch64": _INSTR_aarch64_linux,
+        "x86_64": _INSTR_amd64_windows,
+        "amd64": _INSTR_amd64_windows,
+    },
 }
-_instr_template = INSTR_TEMPLATES[platform.machine().lower()]
+_instr_template = INSTR_TEMPLATES[sys.platform][platform.machine().lower()]
 _i = _instr_template.index(b"\xbb" * 8)
 INSTR_TEMPLATE: typing.Final[bytes] = (
     _instr_template[:_i] + PyObject_Call_address + _instr_template[_i + 8 :]

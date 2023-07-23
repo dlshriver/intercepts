@@ -10,20 +10,19 @@ endif
 # .PRECIOUS: $(BUILD_DIR)/%.o
 
 all: x86_64 aarch64
-	$(info $$CC is [${CC}])
 
 $(BUILD_DIR)/%.o: ${SRC_DIR}/handler.c
 	mkdir -p $(BUILD_DIR)
-	$(CC) -target $*-linux -static -nostdlib -O3 -Werror -o $@ ${SRC_DIR}/handler.c
+	$(CC) -target $* -static -nostdlib -O3 -Werror -o $@ ${SRC_DIR}/handler.c
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.o
 	objcopy -j .text -O binary $^ >(od -An -v -t x1 | tr -d ' \n' > $@)
 
 .PHONY: x86_64
-x86_64: $(BUILD_DIR)/x86_64.hex 
+x86_64: $(BUILD_DIR)/x86_64-linux.hex $(BUILD_DIR)/x86_64-pc-windows-gnu.hex 
 
 .PHONY: aarch64
-aarch64: $(BUILD_DIR)/aarch64.hex
+aarch64: $(BUILD_DIR)/aarch64-linux.hex
 
 .PHONY: clean
 clean:

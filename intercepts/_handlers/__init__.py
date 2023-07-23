@@ -7,8 +7,6 @@ import typing
 
 from .base import PTR_SIZE, get_addr, replace_cfunction_base
 
-if platform.machine() not in {"x86_64", "AMD64", "aarch64"}:  # pragma: no cover
-    raise ImportError(f"Unfortunately {platform.machine()} is not currently supported.")
 if sys.byteorder != "little":  # pragma: no cover
     raise ImportError(
         f"Unfortunately {sys.byteorder} endianness is not currently supported."
