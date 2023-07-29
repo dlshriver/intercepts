@@ -62,6 +62,8 @@ def test_get_global_value():
 
 
 def test_set_global_value():
+    global RESULT
+
     def increment():
         global RESULT
         RESULT = NUM + 1
@@ -69,13 +71,15 @@ def test_set_global_value():
     def handler():
         global RESULT
         _()
-        return NUM - (RESULT - NUM)
+        RESULT = NUM - (RESULT - NUM)
+        return RESULT
 
     intercepts.register(increment, handler)
 
+    RESULT = 0
     NUM = 41
     assert increment() == 40
-    assert RESULT == 42
+    assert RESULT == 40
     NUM = 42
     assert increment() == 41
-    assert RESULT == 43
+    assert RESULT == 41

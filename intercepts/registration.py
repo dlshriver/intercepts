@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import atexit
 import ctypes
+import dis
 import struct
 import sys
 import types
@@ -93,24 +94,32 @@ def _register_function(
         closure=obj.__closure__,
     )
 
-    class GlobalsDict(dict):
-        def __getitem__(self, __key: Any, _obj=_obj, _globals=obj.__globals__) -> Any:
-            if __key == "_":
-                return _obj
-            return _globals[__key]
+    _code = handler.__code__
+    if "_" in _code.co_names:
+        _co_code = _code.co_code
+        _co_consts = _code.co_consts + (_obj,)
+        _index = _code.co_names.index("_")
+        load_const = [dis.opmap["LOAD_CONST"], len(_co_consts) - 1]
+        if sys.version_info[:2] < (3, 11):
+            _co_code = _co_code.replace(
+                bytes([dis.opmap["LOAD_GLOBAL"], _index]),
+                bytes(load_const),
+            )
+        else:
+            _co_code = _co_code.replace(
+                bytes(
+                    [
+                        dis.opmap["LOAD_GLOBAL"],
+                        (_index << 1) + 1,
+                        *([dis.opmap["CACHE"], 0] * 5),
+                    ]
+                ),
+                bytes([dis.opmap["PUSH_NULL"], 0] + load_const),
+            )
+        _code = _code.replace(co_code=_co_code, co_consts=_co_consts)
+    obj.__code__ = _code
 
-    globals_dict = GlobalsDict()
-
-    # Replace code and update globals
-    obj.__code__ = handler.__code__
-    # Updating globals requires a memmove since it's a read-only attribute
-    ctypes.memmove(
-        get_addr(obj) + 2 * PTR_SIZE,
-        struct.pack("N", get_addr(globals_dict)),
-        PTR_SIZE,
-    )
-
-    _HANDLERS[get_addr(obj), type(obj)].append((obj, _obj, globals_dict))
+    _HANDLERS[get_addr(obj), type(obj)].append((obj, _obj))
     return obj
 
 
