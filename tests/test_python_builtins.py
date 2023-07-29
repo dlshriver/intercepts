@@ -337,8 +337,8 @@ def test_builtin(capsys, builtin_func, args, kwargs):
     captured_0 = capsys.readouterr()
     intercepts.register(builtin_func, handler)
     handled_result = builtin_func(*args, **kwargs)
-    captured_1 = capsys.readouterr()
     intercepts.unregister(builtin_func)
+    captured_1 = capsys.readouterr()
     assert handled_result == (
         "handled",
         result,
@@ -372,7 +372,6 @@ def test_input(capsys, monkeypatch):
     test_builtin(capsys, input, ("Input: ",), {})
 
 
-@pytest.mark.xfail(reason="crashes program, must fix")
 @pytest.mark.parametrize(
     "args",
     [
@@ -388,8 +387,8 @@ def test_iter(capsys, args):
     captured_0 = capsys.readouterr()
     intercepts.register(builtin_func, handler)
     handled_result = builtin_func(*args)
-    captured_1 = capsys.readouterr()
     intercepts.unregister(builtin_func)
+    captured_1 = capsys.readouterr()
     assert isinstance(handled_result, tuple)
     assert handled_result[0] == "handled"
     assert list(handled_result[1]) == result

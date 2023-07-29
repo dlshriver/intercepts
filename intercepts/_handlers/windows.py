@@ -6,6 +6,7 @@ import mmap
 import typing
 
 KERNEL32 = ctypes.cdll.kernel32
+
 KERNEL32.VirtualAlloc.argtypes = [
     ctypes.c_void_p,
     ctypes.c_size_t,
@@ -13,6 +14,7 @@ KERNEL32.VirtualAlloc.argtypes = [
     ctypes.c_uint32,
 ]
 KERNEL32.VirtualAlloc.restype = ctypes.c_void_p
+
 KERNEL32.VirtualProtect.argtypes = [
     ctypes.c_void_p,
     ctypes.c_size_t,
@@ -21,19 +23,29 @@ KERNEL32.VirtualProtect.argtypes = [
 ]
 KERNEL32.VirtualProtect.restype = ctypes.c_bool
 
+KERNEL32.VirtualFree.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+    ctypes.c_uint32,
+]
+KERNEL32.VirtualFree.restype = ctypes.c_bool
+
 PAGESIZE = mmap.PAGESIZE
 MEM_COMMIT = 0x00001000
 MEM_RESERVE = 0x00002000
+MEM_RELEASE = 0x00008000
 PAGE_EXECUTE_READ = 0x20
 PAGE_READWRITE = 0x04
 
 
-def malloc(size: int) -> typing.Tuple[int, ctypes.Array[ctypes.c_char]]:
+def malloc(size: int) -> typing.Tuple[int, typing.Callable[[], int]]:
     page_aligned_addr = KERNEL32.VirtualAlloc(
-        None, PAGESIZE, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
+        None, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
     )
-    page = (ctypes.c_char * PAGESIZE).from_address(page_aligned_addr)
-    return page_aligned_addr, page
+    dealloc = lambda _addr=page_aligned_addr: KERNEL32.VirtualFree(
+        _addr, 0, MEM_RELEASE
+    )
+    return page_aligned_addr, dealloc
 
 
 def mprotect(addr: int, size: int) -> None:
