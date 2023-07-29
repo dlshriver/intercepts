@@ -1,5 +1,6 @@
-import intercepts
 import pytest
+
+import intercepts
 
 
 def test_closure():
