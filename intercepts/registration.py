@@ -175,13 +175,7 @@ def _unregister_function_addr(addr: int, depth: int | None = None):
     while handlers.__len__() and depth > 0:
         depth -= 1
         obj, _obj, *_ = handlers.pop()
-        # Reset to previous code and globals values
         obj.__code__ = _obj.__code__
-        ctypes.memmove(
-            addr + 2 * PTR_SIZE,
-            struct.pack("N", get_addr(_obj.__globals__)),
-            PTR_SIZE,
-        )
 
 
 def _unregister_function(obj: types.FunctionType, depth: int | None = None):
