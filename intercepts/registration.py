@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import atexit
 import ctypes
-import struct
+import sys
 import types
 from collections import defaultdict
 from functools import update_wrapper
@@ -27,7 +27,7 @@ def _check_intercept(obj, handler):
         raise ValueError("A function cannot handle itself")
 
 
-def register(obj: T, handler: Callable) -> T:
+def register(obj: T, handler: types.FunctionType) -> T:
     r"""Registers an intercept handler.
 
     :param obj: The callable to intercept.
@@ -43,7 +43,7 @@ def register(obj: T, handler: Callable) -> T:
         >>> increment(43)
         42
     """
-    _register: dict[Type, Callable[[Any, Callable], Any]] = {
+    _register: dict[Type, Callable[[Any, types.FunctionType], Any]] = {
         types.BuiltinFunctionType: _register_builtin,
         types.FunctionType: _register_function,
         types.MethodType: _register_method,
@@ -56,17 +56,10 @@ def register(obj: T, handler: Callable) -> T:
 
 
 def _register_builtin(
-    obj: types.BuiltinFunctionType, handler: Callable
+    obj: types.BuiltinFunctionType, handler: types.FunctionType
 ) -> types.BuiltinFunctionType:
     obj_addr = get_addr(obj)
-    _obj_bytes = ctypes.string_at(obj_addr, 8 * PTR_SIZE)
-    _obj_method_def_bytes = ctypes.string_at(
-        struct.unpack(
-            "N",
-            ctypes.string_at(obj_addr + 2 * PTR_SIZE, PTR_SIZE),
-        )[0],
-        4 * PTR_SIZE,
-    )
+    _obj_bytes = ctypes.string_at(obj_addr, sys.getsizeof(obj))
     _obj = ctypes.cast(
         cast(ctypes._SimpleCData, _obj_bytes),
         ctypes.py_object,
@@ -83,15 +76,13 @@ def _register_builtin(
     )
 
     refs = replace_cfunction(obj, _handler)
-    _HANDLERS[obj_addr, type(obj)].append(
-        (refs, _handler, _obj_method_def_bytes, _obj_bytes)
-    )
+    _HANDLERS[obj_addr, type(obj)].append((refs, _handler, _obj_bytes))
 
     return obj
 
 
 def _register_function(
-    obj: types.FunctionType, handler: Callable
+    obj: types.FunctionType, handler: types.FunctionType
 ) -> types.FunctionType:
     _obj = types.FunctionType(
         code=obj.__code__,
@@ -121,7 +112,9 @@ def _register_function(
     return obj
 
 
-def _register_method(obj: types.MethodType, handler: Callable) -> types.MethodType:
+def _register_method(
+    obj: types.MethodType, handler: types.FunctionType
+) -> types.MethodType:
     _register_function(obj.__func__, handler)
     return obj
 
@@ -151,8 +144,13 @@ def _unregister_builtin_addr(addr: int, depth: int | None = None):
         depth = handlers.__len__()
     while handlers.__len__() and depth > 0:
         depth -= 1
-        *_, _obj_bytes = handlers.pop()
-        ctypes.memmove(addr + 2 * PTR_SIZE, _obj_bytes[2 * PTR_SIZE :], 6 * PTR_SIZE)
+        (_, dealloc), *_, _obj_bytes = handlers.pop()
+        ctypes.memmove(
+            addr + 2 * PTR_SIZE,
+            _obj_bytes[2 * PTR_SIZE :],
+            _obj_bytes.__len__() - 2 * PTR_SIZE,
+        )
+        dealloc()
 
 
 def _unregister_builtin(obj: types.BuiltinFunctionType, depth: int | None = None):
@@ -162,11 +160,11 @@ def _unregister_builtin(obj: types.BuiltinFunctionType, depth: int | None = None
 def _unregister_function_addr(addr: int, depth: int | None = None):
     handlers = _HANDLERS[addr, types.FunctionType]
     if depth is None:
-        depth = len(handlers)
-    while len(handlers) and depth > 0:
+        depth = handlers.__len__()
+    while handlers.__len__() and depth > 0:
         depth -= 1
         _, _obj = handlers.pop()
-        ctypes.memmove(addr + 2 * PTR_SIZE, get_addr(_obj) + 2 * PTR_SIZE, 6 * PTR_SIZE)
+        ctypes.memmove(addr + 2 * PTR_SIZE, get_addr(_obj) + 2 * PTR_SIZE, 5 * PTR_SIZE)
 
 
 def _unregister_function(obj: types.FunctionType, depth: int | None = None):

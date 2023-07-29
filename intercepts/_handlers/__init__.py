@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import platform
 import sys
 import types
 import typing
@@ -22,7 +21,7 @@ else:  # pragma: no cover
 
 def replace_cfunction(
     obj: types.BuiltinFunctionType, handler: typing.Callable
-) -> typing.Tuple[bytes, bytes]:
+) -> typing.Tuple[bytes, typing.Callable[[], int]]:
     return replace_cfunction_base(obj, handler, malloc, mprotect)
 
 

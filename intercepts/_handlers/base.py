@@ -29,7 +29,6 @@ INSTR_TEMPLATES: typing.Final[typing.Dict[str, typing.Dict[str, bytes]]] = {
         "amd64": _INSTR_amd64_linux,
     },
     "win32": {
-        "aarch64": _INSTR_aarch64_linux,
         "x86_64": _INSTR_amd64_windows,
         "amd64": _INSTR_amd64_windows,
     },
@@ -50,11 +49,10 @@ get_addr: typing.Callable[[object], int] = ctypes.cast(
 def replace_cfunction_base(
     obj: types.BuiltinFunctionType,
     handler: typing.Callable,
-    malloc: typing.Callable[[int], typing.Tuple[int, ctypes.Array[ctypes.c_char]]],
+    malloc: typing.Callable[[int], typing.Tuple[int, typing.Callable[[], int]]],
     mprotect: typing.Callable[[int, int], None],
     instr_template: bytes = INSTR_TEMPLATE,
-) -> typing.Tuple[typing.Any, bytes]:
-    instr_len = len(instr_template)
+) -> typing.Tuple[bytes, typing.Callable[[], int]]:
     obj_addr = get_addr(obj)
     (obj_method_def_addr,) = struct.unpack(
         "N",
@@ -62,11 +60,16 @@ def replace_cfunction_base(
     )
 
     # build function byte string
-    i = instr_template.index(b"\xaa" * 8)
-    instr = instr_template[:i] + struct.pack("N", id(handler)) + instr_template[i + 8 :]
+    i = instr_template.index(b"\xaa" * PTR_SIZE)
+    instr = (
+        instr_template[:i]
+        + struct.pack("N", id(handler))
+        + instr_template[i + PTR_SIZE :]
+    )
+    instr_len = len(instr_template)
 
     # allocate memory
-    addr, mem = malloc(instr_len)
+    addr, dealloc = malloc(instr_len)
     # write memory
     ctypes.memmove(addr, instr, instr_len)
     # change memory protection
@@ -87,7 +90,7 @@ def replace_cfunction_base(
     # set vector call
     ctypes.memset(obj_addr + 6 * PTR_SIZE, 0, PTR_SIZE)
 
-    return mem, handler_method_def
+    return handler_method_def, dealloc
 
 
 __all__ = [
