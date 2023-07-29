@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import atexit
 import ctypes
+import struct
 import sys
 import types
 from collections import defaultdict
-from functools import update_wrapper
 from typing import Any, Callable, Type, TypeVar, cast
 
 from ._handlers import PTR_SIZE, get_addr, replace_cfunction
@@ -27,7 +27,7 @@ def _check_intercept(obj, handler):
         raise ValueError("A function cannot handle itself")
 
 
-def register(obj: T, handler: types.FunctionType) -> T:
+def register(obj: T, handler: Callable) -> T:
     r"""Registers an intercept handler.
 
     :param obj: The callable to intercept.
@@ -52,6 +52,7 @@ def register(obj: T, handler: types.FunctionType) -> T:
     if obj_type not in _register:
         raise NotImplementedError(f"Unsupported type: {obj_type}")
     _check_intercept(obj, handler)
+    assert isinstance(handler, types.FunctionType)
     return _register[obj_type](obj, handler)
 
 
@@ -92,23 +93,24 @@ def _register_function(
         closure=obj.__closure__,
     )
 
-    globals_dict = handler.__globals__.copy()
-    globals_dict["_"] = _obj
-    _handler = types.FunctionType(
-        code=handler.__code__,
-        globals=globals_dict,
-        name=handler.__name__,
-        argdefs=handler.__defaults__,
-        closure=handler.__closure__,
-    )
-    update_wrapper(_handler, obj)
-    _HANDLERS[get_addr(obj), type(obj)].append((_handler, _obj))
+    class GlobalsDict(dict):
+        def __getitem__(self, __key: Any, _obj=_obj, _globals=obj.__globals__) -> Any:
+            if __key == "_":
+                return _obj
+            return _globals[__key]
 
+    globals_dict = GlobalsDict()
+
+    # Replace code and update globals
+    obj.__code__ = handler.__code__
+    # Updating globals requires a memmove since it's a read-only attribute
     ctypes.memmove(
         get_addr(obj) + 2 * PTR_SIZE,
-        get_addr(_handler) + 2 * PTR_SIZE,
-        5 * PTR_SIZE,
+        struct.pack("N", get_addr(globals_dict)),
+        PTR_SIZE,
     )
+
+    _HANDLERS[get_addr(obj), type(obj)].append((obj, _obj, globals_dict))
     return obj
 
 
@@ -163,8 +165,14 @@ def _unregister_function_addr(addr: int, depth: int | None = None):
         depth = handlers.__len__()
     while handlers.__len__() and depth > 0:
         depth -= 1
-        _, _obj = handlers.pop()
-        ctypes.memmove(addr + 2 * PTR_SIZE, get_addr(_obj) + 2 * PTR_SIZE, 5 * PTR_SIZE)
+        obj, _obj, *_ = handlers.pop()
+        # Reset to previous code and globals values
+        obj.__code__ = _obj.__code__
+        ctypes.memmove(
+            addr + 2 * PTR_SIZE,
+            struct.pack("N", get_addr(_obj.__globals__)),
+            PTR_SIZE,
+        )
 
 
 def _unregister_function(obj: types.FunctionType, depth: int | None = None):
