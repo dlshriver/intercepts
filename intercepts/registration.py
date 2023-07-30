@@ -20,6 +20,8 @@ from ._handlers import PTR_SIZE, get_addr, replace_cfunction
 T = TypeVar("T")
 _HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
 
+_PYTHON_VERSION = sys.version_info[:2]
+
 
 def _check_intercept(obj, handler):
     if not isinstance(handler, types.FunctionType):
@@ -100,7 +102,7 @@ def _register_function(
         _co_consts = _code.co_consts + (_obj,)
         _index = _code.co_names.index("_")
         load_const = [dis.opmap["LOAD_CONST"], len(_co_consts) - 1]
-        if sys.version_info[:2] < (3, 11):
+        if _PYTHON_VERSION < (3, 11):
             _co_code = _co_code.replace(
                 bytes([dis.opmap["LOAD_GLOBAL"], _index]),
                 bytes(load_const),
@@ -114,7 +116,10 @@ def _register_function(
                         *([dis.opmap["CACHE"], 0] * 5),
                     ]
                 ),
-                bytes([dis.opmap["PUSH_NULL"], 0] + load_const),
+                # Need the NOPs to prevent segfaults with coveragepy and pytest
+                bytes(
+                    [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 4
+                ),
             )
         _code = _code.replace(co_code=_co_code, co_consts=_co_consts)
     obj.__code__ = _code
