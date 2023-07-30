@@ -121,7 +121,26 @@ def _register_function(
                     [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 4
                 ),
             )
-        _code = _code.replace(co_code=_co_code, co_consts=_co_consts)
+        if _PYTHON_VERSION < (3, 8):
+            _code = types.CodeType(
+                _code.co_argcount,
+                _code.co_kwonlyargcount,
+                _code.co_nlocals,
+                _code.co_stacksize,
+                _code.co_flags,
+                _co_code,
+                _co_consts,
+                _code.co_names,
+                _code.co_varnames,
+                _code.co_filename,
+                _code.co_name,
+                _code.co_firstlineno,
+                _code.co_lnotab,
+                _code.co_freevars,
+                _code.co_cellvars,
+            )
+        else:
+            _code = _code.replace(co_code=_co_code, co_consts=_co_consts)
     obj.__code__ = _code
 
     _HANDLERS[get_addr(obj), type(obj)].append((obj, _obj))
