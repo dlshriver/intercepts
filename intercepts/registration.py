@@ -120,6 +120,18 @@ def _register_function(
                 bytes(
                     [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 4
                 ),
+            ).replace(
+                bytes(
+                    [
+                        dis.opmap["LOAD_GLOBAL"],
+                        (_index << 1) + 1,
+                        *([dis.opmap["CACHE"], 0] * 4),
+                    ]
+                ),
+                # Need the NOPs to prevent segfaults with coveragepy and pytest
+                bytes(
+                    [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 3
+                ),
             )
         if _PYTHON_VERSION < (3, 8):
             _code = types.CodeType(
