@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import atexit
 import ctypes
-import dis
 import struct
 import sys
 import types
@@ -16,11 +15,10 @@ from collections import defaultdict
 from typing import Any, Callable, Type, TypeVar, cast
 
 from ._handlers import PTR_SIZE, get_addr, replace_cfunction
+from ._utils import replace_load_global
 
 T = TypeVar("T")
 _HANDLERS: dict[tuple[int, Type], list[tuple[Any, ...]]] = defaultdict(list)
-
-_PYTHON_VERSION = sys.version_info[:2]
 
 
 def _check_intercept(obj, handler):
@@ -69,18 +67,30 @@ def _register_builtin(
         ctypes.py_object,
     ).value
 
-    globals_dict = handler.__globals__.copy()
-    globals_dict["_"] = _obj
+    globals_dict = handler.__globals__
+    _code = replace_load_global(handler.__code__, "_", _obj)
     _handler = types.FunctionType(
-        code=handler.__code__,
-        globals=globals_dict,
+        code=_code,
+        globals=handler.__globals__,
         name=handler.__name__,
         argdefs=handler.__defaults__,
         closure=handler.__closure__,
     )
 
     refs = replace_cfunction(obj, _handler)
-    _HANDLERS[obj_addr, type(obj)].append((refs, _handler, _obj_bytes))
+    _HANDLERS[obj_addr, type(obj)].append(
+        (refs, (_handler, obj, _obj, handler, globals_dict), _obj_bytes)
+    )
+
+    # Need to increment reference count of _obj_bytes to avoid segfaults
+    ctypes.memmove(
+        get_addr(_obj_bytes),
+        struct.pack(
+            "N",
+            struct.unpack("N", ctypes.string_at(get_addr(_obj_bytes), PTR_SIZE))[0] + 1,
+        ),
+        PTR_SIZE,
+    )
 
     return obj
 
@@ -95,65 +105,7 @@ def _register_function(
         argdefs=obj.__defaults__,
         closure=obj.__closure__,
     )
-
-    _code = handler.__code__
-    if "_" in _code.co_names:
-        _co_code = _code.co_code
-        _co_consts = _code.co_consts + (_obj,)
-        _index = _code.co_names.index("_")
-        load_const = [dis.opmap["LOAD_CONST"], len(_co_consts) - 1]
-        if _PYTHON_VERSION < (3, 11):
-            _co_code = _co_code.replace(
-                bytes([dis.opmap["LOAD_GLOBAL"], _index]),
-                bytes(load_const),
-            )
-        else:
-            _co_code = _co_code.replace(
-                bytes(
-                    [
-                        dis.opmap["LOAD_GLOBAL"],
-                        (_index << 1) + 1,
-                        *([dis.opmap["CACHE"], 0] * 5),
-                    ]
-                ),
-                # Need the NOPs to prevent segfaults with coveragepy and pytest
-                bytes(
-                    [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 4
-                ),
-            ).replace(
-                bytes(
-                    [
-                        dis.opmap["LOAD_GLOBAL"],
-                        (_index << 1) + 1,
-                        *([dis.opmap["CACHE"], 0] * 4),
-                    ]
-                ),
-                # Need the NOPs to prevent segfaults with coveragepy and pytest
-                bytes(
-                    [dis.opmap["PUSH_NULL"], 0] + load_const + [dis.opmap["NOP"], 0] * 3
-                ),
-            )
-        if _PYTHON_VERSION < (3, 8):
-            _code = types.CodeType(
-                _code.co_argcount,
-                _code.co_kwonlyargcount,
-                _code.co_nlocals,
-                _code.co_stacksize,
-                _code.co_flags,
-                _co_code,
-                _co_consts,
-                _code.co_names,
-                _code.co_varnames,
-                _code.co_filename,
-                _code.co_name,
-                _code.co_firstlineno,
-                _code.co_lnotab,
-                _code.co_freevars,
-                _code.co_cellvars,
-            )
-        else:
-            _code = _code.replace(co_code=_co_code, co_consts=_co_consts)
-    obj.__code__ = _code
+    obj.__code__ = replace_load_global(handler.__code__, "_", _obj)
 
     _HANDLERS[get_addr(obj), type(obj)].append((obj, _obj))
     return obj
