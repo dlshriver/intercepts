@@ -12,8 +12,7 @@ def replace_load_global(code: types.CodeType, name: str, value: typing.Any):
     if name not in code.co_names:
         return code
     _co_code = code.co_code
-    if value not in code.co_consts:
-        _co_consts = code.co_consts + (value,)
+    _co_consts = code.co_consts + (value,)
     _const_index = _co_consts.index(value)
     _name_index = code.co_names.index(name)
     load_const = [dis.opmap["LOAD_CONST"], _const_index]
