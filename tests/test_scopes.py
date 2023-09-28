@@ -84,3 +84,39 @@ def test_set_global_value():
     NUM = 42
     assert increment() == 41
     assert RESULT == 41
+
+
+def test_get_global_value_handling_builtin():
+    global NUM
+
+    def handler(*args, **kwargs):
+        global NUM
+        result = _(*args, **kwargs)
+        return NUM + 1
+
+    NUM = 41
+    assert sum([3, 8, 2]) == 13
+    intercepts.register(sum, handler)
+    assert sum([3, 8, 2]) == 42
+    NUM = 40
+    assert sum([3, 8, 2]) == 41
+    intercepts.unregister_all()
+    assert sum([3, 8, 2]) == 13
+
+
+def test_set_global_value_handling_builtin():
+    global RESULT
+
+    def handler(*args, **kwargs):
+        global RESULT
+        RESULT = _(*args, **kwargs) + NUM
+        return RESULT - NUM
+
+    assert sum([1, 2, 3, 1]) == 7
+    intercepts.register(sum, handler)
+
+    NUM = 1000
+    RESULT = 0
+    assert RESULT == 0
+    assert sum([1, 2, 3, 1]) == 7
+    assert RESULT == 1007
