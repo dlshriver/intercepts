@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import dis
 import sys
 import types
